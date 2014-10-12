@@ -77,4 +77,4 @@ Both examples produce same assembler code as following handwritten version:
     print_it(";\n");
 }
 ```
-Difference is only in identifier names.
+Difference is only in identifier names, check `ctte/proof_of_concept/*.asm`.
