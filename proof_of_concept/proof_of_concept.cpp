@@ -13,7 +13,7 @@
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/fusion/container.hpp>
 #include <boost/fusion/sequence.hpp>
-#include <boost/compressed_pair.hpp>
+#include <boost/mpl/assert.hpp>
 #include <boost/mpl/apply.hpp>
 #include <initializer_list>
 #include <cstddef>
@@ -24,10 +24,10 @@ namespace CTTE
     /************************************************************************************************/
     // boost utils
 
-    template<typename T, typename U>
-    auto make_compressed_pair(T t, U u)
+    template<typename Lambda, typename X>
+    auto make_pair(Lambda, X x)
     {
-        return boost::compressed_pair<T, U>(t, u);
+        return boost::fusion::make_pair<Lambda>(std::move(x));
     }
 
     template<typename Lambda, typename ...Ts>
@@ -169,7 +169,7 @@ namespace CTTE
     #define CTTE_STRING_HOLDER(X) decltype(std::declval<X>()())
     #define CTTE_MAKE_STRING(X) CTTE::make_string<CTTE_STRING_HOLDER(X)>
 
-    #define CTTE_CAPTURE_VAR(x) CTTE::make_compressed_pair(CTTE_WRAP_STRING(#x), &x)
+    #define CTTE_CAPTURE_VAR(x) CTTE::make_pair(CTTE_WRAP_STRING(#x), &x)
     #define CTTE_CAPTURE_VAR_AUX(r, data, elem) , CTTE_CAPTURE_VAR(elem)
     /************************************************************************************************/   
     template<typename ...Pairs>
@@ -178,7 +178,7 @@ namespace CTTE
         return boost::fusion::make_map
         <
             CTTE_MAKE_STRING(typename Pairs::first_type)...
-        >(pairs.second()...);
+        >(std::move(pairs.second)...);
     };
     /************************************************************************************************/
     template<typename Action, typename ...Actions, typename Context, typename F>
@@ -218,6 +218,13 @@ namespace CTTE
         template<typename Context, typename F>
         F operator()(Context context, F f)
         {
+            BOOST_MPL_ASSERT_MSG
+            (
+                (boost::fusion::result_of::has_key<Context, Variable>::type::value),
+                WRONG_VARIABLE_NAME_IN_FORMAT_STRING,
+                (Variable)
+            );
+
             f( *boost::fusion::at_key<Variable>(context) );
             return f;
         }
